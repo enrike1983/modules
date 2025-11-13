@@ -1,247 +1,191 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Editor Aree & Moduli</title>
-<style>
-  body { font-family: sans-serif; max-width: 700px; margin: 2rem auto; }
-  .area {
-    border: 2px solid #333;
-    border-radius: 10px;
-    padding: 1rem;
-    margin-bottom: 1.5rem;
-    background: #fafafa;
-    position: relative;
-  }
-  .area-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-weight: bold;
-    margin-bottom: 1rem;
-  }
-  .area .module {
-    border: 1px solid #ccc;
-    border-radius: 8px;
-    padding: 1rem;
-    margin-bottom: 1rem;
-    background: #f9f9f9;
-    cursor: grab;
-    position: relative;
-  }
-  .area .module:active { cursor: grabbing; }
-  .delete-btn {
-    position: absolute;
-    top: 6px;
-    right: 6px;
-    background: #ff6666;
-    border: none;
-    color: white;
-    border-radius: 50%;
-    width: 22px;
-    height: 22px;
-    cursor: pointer;
-    font-weight: bold;
-  }
-  .add-btn {
-    display: block;
-    width: 100%;
-    padding: 0.5rem;
-    background: #eee;
-    border: 1px dashed #aaa;
-    border-radius: 8px;
-    cursor: pointer;
-    margin-bottom: 1rem;
-  }
-  textarea {
-    width: 100%;
-    min-height: 60px;
-  }
-  dialog {
-    border: none;
-    border-radius: 10px;
-    padding: 1rem;
-    box-shadow: 0 0 10px rgba(0,0,0,0.3);
-  }
-  dialog button { margin: 0.5rem; }
-  #saveBtn {
-    display: block;
-    margin: 1rem auto;
-    padding: 0.5rem 1rem;
-  }
-  pre { background: #f4f4f4; padding: 1rem; border-radius: 8px; }
-</style>
+  <meta charset="UTF-8">
+  <title>Editor Aree e Moduli</title>
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+  <style>
+    body {
+      font-family: sans-serif;
+      padding: 20px;
+      background: #f8f9fa;
+    }
+
+    #areas {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+
+    .area {
+      background: white;
+      border: 2px solid #ccc;
+      border-radius: 8px;
+      padding: 10px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+
+    .area-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #e9ecef;
+      padding: 8px;
+      border-radius: 5px;
+      cursor: grab;
+    }
+
+    .modules {
+      margin-top: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .module {
+      background: #f1f3f5;
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: grab;
+    }
+
+    button {
+      cursor: pointer;
+      border: none;
+      padding: 5px 8px;
+      border-radius: 4px;
+    }
+
+    .add-btn {
+      background: #007bff;
+      color: white;
+    }
+
+    .delete-btn {
+      background: #dc3545;
+      color: white;
+    }
+
+    #addAreaBtn {
+      margin-top: 15px;
+      background: #28a745;
+      color: white;
+      font-size: 16px;
+    }
+
+    #saveBtn {
+      margin-top: 20px;
+      background: #17a2b8;
+      color: white;
+      font-size: 16px;
+    }
+  </style>
 </head>
 <body>
 
-<h1>Editor Aree e Moduli</h1>
+  <h2>Gestione Aree e Moduli</h2>
+  <div id="areas"></div>
 
-<div id="areasContainer"></div>
-<button id="addAreaBtn" class="add-btn">+ Aggiungi Area</button>
+  <button id="addAreaBtn">+ Aggiungi Area</button>
+  <button id="saveBtn">💾 Salva Struttura</button>
 
-<button id="saveBtn">💾 Salva struttura</button>
-<pre id="output"></pre>
+  <pre id="output"></pre>
 
-<!-- Dialog per scegliere tipo modulo -->
-<dialog id="moduleDialog">
-  <h3>Seleziona tipo di modulo</h3>
-  <button data-type="text">Testo</button>
-  <button data-type="quote">Citazione</button>
-  <button data-type="image">Immagine</button>
-  <button id="closeDialog">Annulla</button>
-</dialog>
+  <script>
+    const areasContainer = document.getElementById('areas');
+    const output = document.getElementById('output');
 
-<!-- SortableJS -->
-<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+    // ---- Creazione di una nuova area ----
+    function createArea(title = 'Nuova Area') {
+      const area = document.createElement('div');
+      area.classList.add('area');
 
-<script>
-const areasContainer = document.getElementById('areasContainer');
-const dialog = document.getElementById('moduleDialog');
-const output = document.getElementById('output');
-let currentArea = null;
-let currentAddIndex = null;
+      area.innerHTML = `
+        <div class="area-header">
+          <input type="text" class="area-title" value="${title}" />
+          <div>
+            <button class="add-module-btn add-btn">+ Modulo</button>
+            <button class="delete-area-btn delete-btn">🗑️</button>
+          </div>
+        </div>
+        <div class="modules"></div>
+      `;
 
-// --- AREA ---
-function createArea(title = 'Nuova Area') {
-  const area = document.createElement('div');
-  area.className = 'area';
+      areasContainer.appendChild(area);
+      initModulesSortable(area.querySelector('.modules'));
+    }
 
-  const header = document.createElement('div');
-  header.className = 'area-header';
+    // ---- Creazione di un modulo ----
+    function createModule(container, content = 'Nuovo Modulo') {
+      const module = document.createElement('div');
+      module.classList.add('module');
+      module.innerHTML = `
+        <input type="text" class="module-content" value="${content}" />
+        <button class="delete-module-btn delete-btn">🗑️</button>
+      `;
+      container.appendChild(module);
+    }
 
-  const titleInput = document.createElement('input');
-  titleInput.type = 'text';
-  titleInput.value = title;
-  titleInput.style.flex = '1';
-  titleInput.style.marginRight = '1rem';
-
-  const delBtn = document.createElement('button');
-  delBtn.textContent = '×';
-  delBtn.className = 'delete-btn';
-  delBtn.title = 'Elimina area';
-  delBtn.onclick = () => {
-    area.remove();
-    initAreasSortable();
-  };
-
-  header.appendChild(titleInput);
-  header.appendChild(delBtn);
-  area.appendChild(header);
-
-  const modulesContainer = document.createElement('div');
-  modulesContainer.className = 'modulesContainer';
-  area.appendChild(modulesContainer);
-
-  const addModuleBtn = document.createElement('button');
-  addModuleBtn.textContent = '+ Aggiungi modulo';
-  addModuleBtn.className = 'add-btn';
-  addModuleBtn.onclick = () => {
-    currentArea = area;
-    currentAddIndex = getModules(area).length;
-    dialog.showModal();
-  };
-  area.appendChild(addModuleBtn);
-
-  initModulesSortable(modulesContainer);
-  return area;
-}
-
-// --- MODULO ---
-function createModule(type, content = '') {
-  const module = document.createElement('div');
-  module.className = 'module';
-  module.dataset.type = type;
-
-  const delBtn = document.createElement('button');
-  delBtn.textContent = '×';
-  delBtn.className = 'delete-btn';
-  delBtn.title = 'Elimina modulo';
-  delBtn.onclick = () => {
-    module.remove();
-  };
-  module.appendChild(delBtn);
-
-  if (type === 'text' || type === 'quote') {
-    const textarea = document.createElement('textarea');
-    textarea.placeholder = type === 'text' ? 'Scrivi del testo...' : 'Scrivi una citazione...';
-    textarea.value = content;
-    module.appendChild(textarea);
-  } else if (type === 'image') {
-    const input = document.createElement('input');
-    input.type = 'text';
-    input.placeholder = 'URL immagine...';
-    input.value = content;
-    module.appendChild(input);
-  }
-
-  return module;
-}
-
-// --- UTILITY ---
-function getAreas() {
-  return Array.from(document.querySelectorAll('.area'));
-}
-
-function getModules(area) {
-  return Array.from(area.querySelectorAll('.module'));
-}
-
-// --- DRAG&DROP ---
-function initAreasSortable() {
-  Sortable.create(areasContainer, {
-    animation: 150,
-    handle: '.area-header',
-  });
-}
-
-function initModulesSortable(container) {
-  Sortable.create(container, {
-    animation: 150,
-    handle: '.module',
-  });
-}
-
-// --- SALVATAGGIO JSON ---
-function toJSON() {
-  return getAreas().map(area => {
-    const title = area.querySelector('.area-header input').value;
-    const modules = getModules(area).map(mod => {
-      const type = mod.dataset.type;
-      const input = mod.querySelector('textarea, input');
-      return { type, content: input ? input.value : '' };
+    // ---- Inizializzazione del drag & drop ----
+    new Sortable(areasContainer, {
+      animation: 150,
+      handle: '.area-header',
     });
-    return { area: title, modules };
-  });
-}
 
-// --- DIALOG MODULI ---
-dialog.querySelectorAll('button[data-type]').forEach(btn => {
-  btn.onclick = () => {
-    const mod = createModule(btn.dataset.type);
-    const modulesContainer = currentArea.querySelector('.modulesContainer');
-    modulesContainer.appendChild(mod);
-    initModulesSortable(modulesContainer);
-    dialog.close();
-  };
-});
-document.getElementById('closeDialog').onclick = () => dialog.close();
+    function initModulesSortable(container) {
+      new Sortable(container, {
+        animation: 150,
+        group: 'modules',
+        handle: '.module',
+      });
+    }
 
-// --- EVENTI PRINCIPALI ---
-document.getElementById('addAreaBtn').onclick = () => {
-  const area = createArea();
-  areasContainer.appendChild(area);
-  initAreasSortable();
-};
+    // ---- Event delegation ----
+    document.body.addEventListener('click', (e) => {
+      if (e.target.id === 'addAreaBtn') {
+        createArea();
+      }
 
-document.getElementById('saveBtn').onclick = () => {
-  output.textContent = JSON.stringify(toJSON(), null, 2);
-};
+      if (e.target.classList.contains('add-module-btn')) {
+        const area = e.target.closest('.area');
+        const modulesContainer = area.querySelector('.modules');
+        createModule(modulesContainer);
+      }
 
-// --- INIT ---
-initAreasSortable();
-</script>
+      if (e.target.classList.contains('delete-module-btn')) {
+        e.target.closest('.module').remove();
+      }
 
+      if (e.target.classList.contains('delete-area-btn')) {
+        e.target.closest('.area').remove();
+      }
+
+      if (e.target.id === 'saveBtn') {
+        saveStructure();
+      }
+    });
+
+    // ---- Esporta struttura in JSON ----
+    function saveStructure() {
+      const structure = [];
+      document.querySelectorAll('.area').forEach(area => {
+        const areaTitle = area.querySelector('.area-title').value;
+        const modules = [];
+        area.querySelectorAll('.module').forEach(mod => {
+          modules.push({
+            content: mod.querySelector('.module-content').value
+          });
+        });
+        structure.push({ area: areaTitle, modules });
+      });
+
+      output.textContent = JSON.stringify(structure, null, 2);
+    }
+  </script>
 </body>
 </html>
 
