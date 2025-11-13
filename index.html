@@ -44,10 +44,6 @@
       transition: transform 0.1s;
     }
 
-    .area:active {
-      transform: scale(0.98);
-    }
-
     .area-header {
       display: flex;
       justify-content: space-between;
@@ -55,9 +51,19 @@
       background: var(--gray);
       padding: 8px;
       border-radius: 5px;
-      cursor: grab;
       flex-wrap: wrap;
       gap: 8px;
+    }
+
+    .drag-handle {
+      cursor: grab;
+      font-size: 1.2rem;
+      user-select: none;
+      margin-right: 8px;
+    }
+
+    .drag-handle:active {
+      cursor: grabbing;
     }
 
     .area-title {
@@ -69,8 +75,9 @@
       border-radius: 4px;
     }
 
-    .area-header button {
-      margin-left: 5px;
+    .area-header div {
+      display: flex;
+      gap: 5px;
     }
 
     .modules {
@@ -88,9 +95,9 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      cursor: grab;
       flex-wrap: wrap;
       gap: 5px;
+      cursor: grab;
     }
 
     .module-content {
@@ -154,7 +161,7 @@
       overflow-x: auto;
     }
 
-    /* --- Responsive tweaks --- */
+    /* --- Responsive --- */
     @media (max-width: 600px) {
       body {
         padding: 10px;
@@ -166,9 +173,7 @@
       }
 
       .area-header div {
-        display: flex;
         justify-content: flex-end;
-        gap: 5px;
       }
 
       .module {
@@ -200,13 +205,14 @@
     const areasContainer = document.getElementById('areas');
     const output = document.getElementById('output');
 
-    // ---- Creazione di una nuova area ----
+    // ---- Crea una nuova area ----
     function createArea(title = 'Nuova Area') {
       const area = document.createElement('div');
       area.classList.add('area');
 
       area.innerHTML = `
         <div class="area-header">
+          <span class="drag-handle">☰</span>
           <input type="text" class="area-title" value="${title}" placeholder="Nome area..." />
           <div>
             <button class="add-module-btn add-btn">+ Modulo</button>
@@ -220,7 +226,7 @@
       initModulesSortable(area.querySelector('.modules'));
     }
 
-    // ---- Creazione di un modulo ----
+    // ---- Crea un modulo ----
     function createModule(container, content = 'Nuovo Modulo') {
       const module = document.createElement('div');
       module.classList.add('module');
@@ -231,19 +237,24 @@
       container.appendChild(module);
     }
 
-    // ---- Inizializzazione del drag & drop ----
+    // ---- Drag & drop delle aree ----
     new Sortable(areasContainer, {
-      animation: 150,
-      handle: '.area-header',
-      ghostClass: 'dragging'
+      animation: 100,
+      handle: '.drag-handle',
+      ghostClass: 'dragging',
+      delay: 0,
+      touchStartThreshold: 0,
     });
 
+    // ---- Drag & drop dei moduli ----
     function initModulesSortable(container) {
       new Sortable(container, {
-        animation: 150,
+        animation: 100,
         group: 'modules',
         handle: '.module',
-        ghostClass: 'dragging'
+        ghostClass: 'dragging',
+        delay: 0,
+        touchStartThreshold: 0,
       });
     }
 
@@ -272,7 +283,7 @@
       }
     });
 
-    // ---- Esporta struttura in JSON ----
+    // ---- Salvataggio struttura in JSON ----
     function saveStructure() {
       const structure = [];
       document.querySelectorAll('.area').forEach(area => {
@@ -289,7 +300,7 @@
       output.textContent = JSON.stringify(structure, null, 2);
     }
 
-    // ---- Aggiunge un’area iniziale di esempio ----
+    // ---- Aggiunge un’area iniziale ----
     createArea("Area iniziale");
   </script>
 </body>
