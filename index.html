@@ -3,12 +3,30 @@
 <head>
   <meta charset="UTF-8">
   <title>Editor Aree e Moduli</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
   <style>
+    :root {
+      --bg: #f8f9fa;
+      --card: #ffffff;
+      --border: #ccc;
+      --primary: #007bff;
+      --danger: #dc3545;
+      --success: #28a745;
+      --info: #17a2b8;
+      --gray: #e9ecef;
+    }
+
     body {
-      font-family: sans-serif;
+      font-family: system-ui, sans-serif;
       padding: 20px;
-      background: #f8f9fa;
+      background: var(--bg);
+      margin: 0;
+    }
+
+    h2 {
+      text-align: center;
+      margin-bottom: 20px;
     }
 
     #areas {
@@ -18,21 +36,41 @@
     }
 
     .area {
-      background: white;
-      border: 2px solid #ccc;
+      background: var(--card);
+      border: 2px solid var(--border);
       border-radius: 8px;
       padding: 10px;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      box-shadow: 0 2px 5px rgba(0,0,0,0.08);
+      transition: transform 0.1s;
+    }
+
+    .area:active {
+      transform: scale(0.98);
     }
 
     .area-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      background: #e9ecef;
+      background: var(--gray);
       padding: 8px;
       border-radius: 5px;
       cursor: grab;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .area-title {
+      flex: 1;
+      min-width: 150px;
+      padding: 6px;
+      font-size: 1rem;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+    }
+
+    .area-header button {
+      margin-left: 5px;
     }
 
     .modules {
@@ -45,43 +83,106 @@
     .module {
       background: #f1f3f5;
       padding: 8px;
-      border: 1px solid #ccc;
+      border: 1px solid var(--border);
       border-radius: 5px;
       display: flex;
       justify-content: space-between;
       align-items: center;
       cursor: grab;
+      flex-wrap: wrap;
+      gap: 5px;
+    }
+
+    .module-content {
+      flex: 1;
+      min-width: 100px;
+      padding: 5px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
     }
 
     button {
       cursor: pointer;
       border: none;
-      padding: 5px 8px;
+      padding: 6px 10px;
       border-radius: 4px;
+      font-size: 0.9rem;
+      transition: background 0.2s;
     }
 
     .add-btn {
-      background: #007bff;
+      background: var(--primary);
       color: white;
+    }
+
+    .add-btn:hover {
+      background: #0056b3;
     }
 
     .delete-btn {
-      background: #dc3545;
+      background: var(--danger);
       color: white;
+    }
+
+    .delete-btn:hover {
+      background: #a71d2a;
     }
 
     #addAreaBtn {
+      width: 100%;
       margin-top: 15px;
-      background: #28a745;
+      background: var(--success);
       color: white;
-      font-size: 16px;
+      font-size: 1rem;
     }
 
     #saveBtn {
-      margin-top: 20px;
-      background: #17a2b8;
+      width: 100%;
+      margin-top: 10px;
+      background: var(--info);
       color: white;
-      font-size: 16px;
+      font-size: 1rem;
+    }
+
+    #output {
+      background: #212529;
+      color: #f8f9fa;
+      padding: 10px;
+      border-radius: 5px;
+      margin-top: 15px;
+      font-size: 0.85rem;
+      overflow-x: auto;
+    }
+
+    /* --- Responsive tweaks --- */
+    @media (max-width: 600px) {
+      body {
+        padding: 10px;
+      }
+
+      .area-header {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .area-header div {
+        display: flex;
+        justify-content: flex-end;
+        gap: 5px;
+      }
+
+      .module {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .module-content {
+        width: 100%;
+      }
+
+      button {
+        font-size: 0.85rem;
+      }
     }
   </style>
 </head>
@@ -106,7 +207,7 @@
 
       area.innerHTML = `
         <div class="area-header">
-          <input type="text" class="area-title" value="${title}" />
+          <input type="text" class="area-title" value="${title}" placeholder="Nome area..." />
           <div>
             <button class="add-module-btn add-btn">+ Modulo</button>
             <button class="delete-area-btn delete-btn">🗑️</button>
@@ -124,7 +225,7 @@
       const module = document.createElement('div');
       module.classList.add('module');
       module.innerHTML = `
-        <input type="text" class="module-content" value="${content}" />
+        <input type="text" class="module-content" value="${content}" placeholder="Contenuto modulo..." />
         <button class="delete-module-btn delete-btn">🗑️</button>
       `;
       container.appendChild(module);
@@ -134,6 +235,7 @@
     new Sortable(areasContainer, {
       animation: 150,
       handle: '.area-header',
+      ghostClass: 'dragging'
     });
 
     function initModulesSortable(container) {
@@ -141,6 +243,7 @@
         animation: 150,
         group: 'modules',
         handle: '.module',
+        ghostClass: 'dragging'
       });
     }
 
@@ -185,6 +288,9 @@
 
       output.textContent = JSON.stringify(structure, null, 2);
     }
+
+    // ---- Aggiunge un’area iniziale di esempio ----
+    createArea("Area iniziale");
   </script>
 </body>
 </html>
